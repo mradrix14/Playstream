@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playstream | Global Live Explorer</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Video.js CSS -->
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+
+    <style>
+        :root {
+            --primary-color: #00d4ff;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+        }
+
+        body { 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            background: var(--bg-color);
+            color: white;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 15px 30px;
+            background: var(--card-bg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #334155;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            color: var(--primary-color);
+            text-transform: uppercase;
+        }
+
+        #map { 
+            flex: 1; 
+            width: 100%; 
+            background: #0b0f1a;
+        }
+
+        #player-section { 
+            height: 320px; 
+            background: var(--card-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
+            border-top: 1px solid #334155;
+        }
+
+        .video-container {
+            width: 100%;
+            max-width: 800px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #334155;
+            background: #000;
+        }
+
+        .video-js {
+            width: 100%;
+            height: 250px;
+        }
+
+        .status-bar {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        /* Map Popup Styling */
+        .leaflet-popup-content-wrapper {
+            background: var(--card-bg);
+            color: white;
+            border-radius: 8px;
+        }
+        .leaflet-popup-tip { background: var(--card-bg); }
+        
+        .play-btn {
+            background: var(--primary-color);
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: transform 0.2s;
+        }
+        .play-btn:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">Playstream</div>
+        <div style="font-size: 0.9rem; color: #94a3b8;">Click a marker to explore the world</div>
+    </header>
+
+    <div id="map"></div>
+
+    <div id="player-section">
+        <div class="video-container">
+            <video id="main-player" class="video-js vjs-theme-city vjs-big-play-centered" controls preload="auto">
+                <p class="vjs-no-js">To view this video please enable JavaScript.</p>
+            </video>
+        </div>
+        <div class="status-bar" id="stream-info">Now Playing: Select a channel</div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+
+    <script>
+        // Initialize Player
+        const player = videojs('main-player');
+
+        // Initialize Dark-themed Map
+        const map = L.map('map', { zoomControl: false }).setView([20, 0], 2);
+        L.control.zoom({ position: 'topright' }).addTo(map);
+
+        // Using a cleaner tile set
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // Channel Database
+        const channels = [
+            {
+                name: "NASA Live",
+                location: "Florida, USA",
+                coords: [28.5729, -80.6490],
+                url: "https://ntv1.akamaized.net/hls/live/2014049/NASA-NTV1-Public/master.m3u8"
+            },
+            {
+                name: "International Space Station",
+                location: "Low Earth Orbit",
+                coords: [0, 0],
+                url: "https://vjs.zencdn.net/v/oceans.mp4" // Placeholder
+            }
+        ];
+
+        // Function to load stream
+        window.loadChannel = function(url, name) {
+            const type = url.endsWith('.m3u8') ? 'application/x-mpegURL' : 'video/mp4';
+            player.src({ src: url, type: type });
+            player.play();
+            document.getElementById('stream-info').innerText = "Now Playing: " + name;
+        };
+
+        // Populate Map
+        channels.forEach(ch => {
+            const marker = L.marker(ch.coords).addTo(map);
+            const popupContent = `
+                <div style="text-align:center">
+                    <strong style="font-size:1.1rem">${ch.name}</strong><br>
+                    <span style="color:#94a3b8">${ch.location}</span><br>
+                    <button class="play-btn" onclick="loadChannel('${ch.url}', '${ch.name}')">WATCH NOW</button>
+                </div>
+            `;
+            marker.bindPopup(popupContent);
+        });
+
+        // Auto-load first channel
+        loadChannel(channels[0].url, channels[0].name);
+    </script>
+</body>
+</html>
